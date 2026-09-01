@@ -13,8 +13,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://aaranya-care-intelligence.trilogy-1207.chatgpt.site'),
   title: 'Aaranya Care Intelligence',
   description: 'A human-supervised AI care agent for safer, more personal senior living.',
+  openGraph: {
+    title: 'Aaranya Care Intelligence',
+    description: 'Safer care. Calmer teams. Closer families.',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Aaranya Care Intelligence' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Aaranya Care Intelligence',
+    description: 'Safer care. Calmer teams. Closer families.',
+    images: ['/og.png'],
+  },
 };
 
 export default function RootLayout({
