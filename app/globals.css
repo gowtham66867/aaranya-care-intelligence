@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+:root {
+  --background: #f4f1e9;
+  --foreground: #18332d;
+  --card: #fffdf8;
+  --card-foreground: #18332d;
+  --primary: #173f36;
+  --primary-foreground: #ffffff;
+  --secondary: #e8ece3;
+  --secondary-foreground: #173f36;
+  --muted: #eeece4;
+  --muted-foreground: #66766f;
+  --accent: #e1a83b;
+  --accent-foreground: #173f36;
+  --destructive: #b8483f;
+  --border: #d8ded7;
+  --input: #d8ded7;
+  --ring: #2f7465;
+  --radius: .9rem;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-geist-sans), Arial, sans-serif; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+.eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #738079; }
+.nav-item { display: flex; align-items: center; gap: .8rem; border-radius: .9rem; padding: .8rem .9rem; color: rgb(236 253 245 / .68); font-size: .875rem; font-weight: 600; transition: .2s ease; }
+.nav-item:hover { background: rgb(255 255 255 / .07); color: white; }
+.nav-active { background: rgb(255 255 255 / .1); color: white; }
+.status { border-radius: 999px; padding: .35rem .65rem; font-size: .7rem; font-weight: 800; }
+.status-green { background: #e0eee4; color: #276b49; }
+.status-amber { background: #f8e9bf; color: #805b15; }
+.resident-selected { color: #173f36; }
+.resident-selected > div:first-child { background: #173f36; color: white; }
+.signal-chip { border: 1px solid #d2dad3; border-radius: 999px; background: white; padding: .55rem .8rem; font-size: .75rem; font-weight: 700; color: #36564e; transition: .2s ease; }
+.signal-chip:hover, .signal-chip:focus-visible { border-color: #4c8777; background: #eaf1e8; outline: none; }
+.risk { border-radius: 999px; padding: .4rem .7rem; font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.risk-emergency { background: #f3d7d2; color: #913c34; }
+.risk-urgent { background: #f5dfc9; color: #8b4d20; }
+.risk-watch { background: #f5e8bc; color: #795713; }
+.risk-routine { background: #deeee3; color: #276b49; }
+@media (max-width: 520px) { .status { display: none; } }
