@@ -43,4 +43,8 @@ button { cursor: pointer; }
 .risk-urgent { background: #f5dfc9; color: #8b4d20; }
 .risk-watch { background: #f5e8bc; color: #795713; }
 .risk-routine { background: #deeee3; color: #276b49; }
+.agent-index { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border-radius: 999px; background: #dceadf; color: #246448; font-size: .7rem; font-weight: 900; }
+.agent-waiting { background: #f6e8bd; color: #795713; }
+.agent-status { border-radius: 999px; background: #dceadf; padding: .25rem .45rem; color: #246448; font-size: .58rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.agent-status-waiting { background: #f6e8bd; color: #795713; }
 @media (max-width: 520px) { .status { display: none; } }

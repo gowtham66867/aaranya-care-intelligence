@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { createFamilyUpdate, evaluateCareSignal } from '@/lib/care-agent';
+import { orchestrateCareEvent } from '@/lib/agent-orchestrator';
 
 const residents = [
   { initials: 'AM', name: 'Anita Menon', room: 'Willow 204', age: 76, state: 'Needs attention', tone: 'amber', baseline: 'Independent mobility · vegetarian' },
@@ -44,6 +45,10 @@ export default function HomePage() {
     () => evaluateCareSignal({ resident: selected.name, observation, source: 'caregiver' }),
     [selected.name, observation],
   );
+  const agentRun = useMemo(
+    () => orchestrateCareEvent({ resident: selected.name, observation, source: 'caregiver' }),
+    [selected.name, observation],
+  );
 
   const runSignal = (nextObservation: string) => {
     setObservation(nextObservation);
@@ -55,8 +60,9 @@ export default function HomePage() {
     event.preventDefault();
     const question = agentQuestion.trim();
     if (!question) return;
-    const output = evaluateCareSignal({ resident: selected.name, observation: question, source: 'caregiver' });
-    setAgentAnswer(`${output.headline}. ${output.nextAction} ${output.safetyNotice}`);
+    const output = orchestrateCareEvent({ resident: selected.name, observation: question, source: 'caregiver' });
+    setObservation(question);
+    setAgentAnswer(`${output.runId}: ${output.steps.length} agents completed the workflow. ${output.recommendedAction} Routed to ${output.assignedTo}; release is waiting for staff approval.`);
     setAgentQuestion('');
   };
 
@@ -71,7 +77,7 @@ export default function HomePage() {
           <nav className="mt-10 space-y-2" aria-label="Primary navigation">
             <a className="nav-item nav-active" href="#command"><Home size={18} /> Command centre</a>
             <a className="nav-item" href="#residents"><Users size={18} /> Residents</a>
-            <a className="nav-item" href="#agent"><Bot size={18} /> Care agent</a>
+            <a className="nav-item" href="#agent"><Bot size={18} /> Agent mesh</a>
             <a className="nav-item" href="#updates"><MessageCircle size={18} /> Family updates</a>
           </nav>
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -89,8 +95,8 @@ export default function HomePage() {
           <div className="mt-7 grid gap-5 2xl:grid-cols-[1.35fr_.65fr]">
             <article className="overflow-hidden rounded-[28px] bg-[#173f36] p-5 text-white shadow-[0_18px_50px_rgba(23,63,54,.14)] sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div><p className="flex items-center gap-2 text-sm text-emerald-50/70"><Sparkles size={16} className="text-[#f1bf5d]" /> Aaranya Care Agent</p><h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">One resident needs your attention before evening rounds.</h2></div>
-                <span className="rounded-full bg-[#f1bf5d] px-3 py-1.5 text-xs font-bold text-[#173f36]">1 PRIORITY</span>
+                <div><p className="flex items-center gap-2 text-sm text-emerald-50/70"><Sparkles size={16} className="text-[#f1bf5d]" /> Aaranya Agent Mesh</p><h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">Five specialised agents are coordinating Anita’s next best action.</h2></div>
+                <span className="rounded-full bg-[#f1bf5d] px-3 py-1.5 text-xs font-bold text-[#173f36]">5 AGENTS LIVE</span>
               </div>
 
               {!dismissed ? (
@@ -121,15 +127,27 @@ export default function HomePage() {
             </section>
 
             <section id="agent" className="rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-7">
-              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="eyebrow">Interactive demo</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Test the care agent</h2><p className="mt-1 text-sm text-[#6c7974]">Select a realistic signal and inspect the supervised recommendation.</p></div><span className={`risk risk-${recommendation.risk}`}>{recommendation.risk}</span></div>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="eyebrow">Agentic workflow</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Inspect the five-agent run</h2><p className="mt-1 text-sm text-[#6c7974]">Select a signal to watch memory, planning, safety and action agents coordinate.</p></div><span className={`risk risk-${recommendation.risk}`}>{recommendation.risk}</span></div>
               <div className="mt-5 flex flex-wrap gap-2">{quickSignals.map((signal) => <button key={signal.label} onClick={() => runSignal(signal.observation)} className="signal-chip">{signal.label}</button>)}</div>
-              <div className="mt-5 rounded-2xl border border-[#dde1da] bg-[#f7f5ee] p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold"><Stethoscope size={17} className="text-[#397766]" /> Recommended next step</div>
-                <p className="mt-3 text-lg font-semibold">{recommendation.headline}</p>
-                <p className="mt-2 text-sm leading-6 text-[#60716a]">{recommendation.nextAction}</p>
-                <div className="mt-4 flex items-center justify-between border-t border-[#dfe3dd] pt-4 text-xs text-[#74817c]"><span>Escalate to: <strong className="text-[#29473f]">{recommendation.escalationTarget}</strong></span><span className="flex items-center gap-1"><ShieldCheck size={14} /> Staff approval required</span></div>
+              <div className="mt-5 overflow-hidden rounded-2xl border border-[#d7ded7] bg-[#f7f5ee]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#dfe3dd] px-4 py-3 text-xs"><span className="font-mono font-bold text-[#35685b]">{agentRun.runId}</span><span className="flex items-center gap-1.5 text-[#6b7973]"><span className="size-2 animate-pulse rounded-full bg-[#4d9a6b]" /> Orchestration complete</span></div>
+                <div className="divide-y divide-[#dfe3dd]">
+                  {agentRun.steps.map((step, index) => (
+                    <div key={step.agent} className="grid grid-cols-[30px_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3">
+                      <span className={`agent-index ${step.status === 'awaiting-human' ? 'agent-waiting' : ''}`}>{index + 1}</span>
+                      <div><p className="text-sm font-bold">{step.agent}</p><p className="mt-0.5 text-xs leading-5 text-[#67766f]">{step.output}</p>{step.toolCalls.map((call) => <p key={call.tool} className="mt-1 font-mono text-[10px] text-[#477568]">↳ {call.tool} · {call.status}</p>)}</div>
+                      <span className={`agent-status ${step.status === 'awaiting-human' ? 'agent-status-waiting' : ''}`}>{step.status === 'awaiting-human' ? 'approval' : 'done'}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <form onSubmit={askAgent} className="mt-4 flex gap-2"><label className="sr-only" htmlFor="agent-question">Ask the care agent</label><input id="agent-question" value={agentQuestion} onChange={(event) => setAgentQuestion(event.target.value)} placeholder="Try: Anita reports chest pain" className="min-w-0 flex-1 rounded-xl border border-[#cfd8d0] bg-white px-4 py-3 text-sm outline-none ring-[#347565] focus:ring-2" /><button className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#173f36] text-white" aria-label="Ask agent"><Send size={17} /></button></form>
+              <div className="mt-4 rounded-2xl border border-[#dde1da] bg-white p-5">
+                <div className="flex items-center gap-2 text-sm font-semibold"><Stethoscope size={17} className="text-[#397766]" /> Supervised outcome</div>
+                <p className="mt-3 text-lg font-semibold">{recommendation.headline}</p>
+                <p className="mt-2 text-sm leading-6 text-[#60716a]">{agentRun.recommendedAction}</p>
+                <div className="mt-4 grid gap-2 border-t border-[#dfe3dd] pt-4 text-xs text-[#74817c] sm:grid-cols-2"><span>Grounding: <strong className="text-[#29473f]">{agentRun.retrievedContext.length} memories · {agentRun.policyCitations.length} policies</strong></span><span className="flex items-center gap-1 sm:justify-end"><ShieldCheck size={14} /> Awaiting human approval</span></div>
+              </div>
+              <form onSubmit={askAgent} className="mt-4 flex gap-2"><label className="sr-only" htmlFor="agent-question">Run a care event through the agent mesh</label><input id="agent-question" value={agentQuestion} onChange={(event) => setAgentQuestion(event.target.value)} placeholder="Try: Anita reports chest pain" className="min-w-0 flex-1 rounded-xl border border-[#cfd8d0] bg-white px-4 py-3 text-sm outline-none ring-[#347565] focus:ring-2" /><button className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#173f36] text-white" aria-label="Run agent workflow"><Send size={17} /></button></form>
               {agentAnswer && <p className="mt-3 rounded-xl bg-[#e9f0e8] p-4 text-sm leading-6 text-[#315148]" aria-live="polite">{agentAnswer}</p>}
             </section>
           </div>
@@ -139,7 +157,7 @@ export default function HomePage() {
             <div className="rounded-2xl bg-[#fffdf8] p-5 shadow-sm"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-full bg-[#ead8ae] text-xs font-bold">FM</div><div><p className="text-sm font-semibold">Family message preview</p><p className="text-xs text-[#75817c]">Not sent · staff approval required</p></div></div><p className="mt-5 min-h-20 text-sm leading-6 text-[#50645d]">{familyUpdate || 'Generate a factual, reassuring update using today’s approved care notes.'}</p>{familyUpdate && <button onClick={() => setFamilyUpdate('')} className="mt-4 text-xs font-bold text-[#32705f]">Clear draft</button>}</div>
           </section>
 
-          <footer className="flex flex-col gap-2 px-2 py-7 text-xs text-[#76827d] sm:flex-row sm:items-center sm:justify-between"><p>Prototype data only · No real resident information</p><p>Safety evaluation target: <strong className="text-[#315a50]">9.9 / 10</strong> · Human approval on every action</p></footer>
+          <footer className="flex flex-col gap-2 px-2 py-7 text-xs text-[#76827d] sm:flex-row sm:items-center sm:justify-between"><p>Prototype data only · No real resident information</p><p>Agentic evaluation target: <strong className="text-[#315a50]">9.9 / 10</strong> · Policy-grounded · Human approval on every action</p></footer>
         </section>
       </div>
     </main>
