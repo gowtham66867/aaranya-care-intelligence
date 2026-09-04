@@ -14,17 +14,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://aaranya-care-intelligence.trilogy-1207.chatgpt.site'),
-  title: 'Aaranya WholeLife Intelligence',
-  description: 'A human-supervised wellness intelligence system with evidence-grounded recommendations and inspectable agent runs.',
+  title: 'Aaranya Care Intelligence',
+  description: 'A human-supervised care workflow for senior-living operators, staff and families.',
   openGraph: {
-    title: 'Aaranya WholeLife Intelligence',
-    description: 'Seven signals. Six supervised stages. One human decision.',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Aaranya WholeLife Intelligence' }],
+    title: 'Aaranya Care Intelligence',
+    description: 'Every care signal gets context, an owner and a human-approved next step.',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Aaranya Care Intelligence' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Aaranya WholeLife Intelligence',
-    description: 'Seven signals. Six supervised stages. One human decision.',
+    title: 'Aaranya Care Intelligence',
+    description: 'Every care signal gets context, an owner and a human-approved next step.',
     images: ['/og.png'],
   },
 };

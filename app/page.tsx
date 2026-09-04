@@ -2,119 +2,112 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Activity, ArrowUpRight, Brain, Check, ChevronRight, CircleUserRound, Compass,
-  Database, Droplets, FileCheck2, HeartHandshake, Leaf, MoonStar, RefreshCw, ShieldCheck, Sparkles,
-  Sun, Waves, Zap,
+  Activity, Bell, Bot, Building2, Check, ChevronRight, ClipboardCheck, Clock3,
+  HeartPulse, Home, MessageCircle, Send, ShieldCheck, Sparkles, Stethoscope,
+  Target, Users, X,
 } from 'lucide-react';
-import { runWellnessCouncil } from '@/lib/wellness-agent-runtime';
-import type { WellnessCheckIn, WellnessDimensionId } from '@/lib/wellness-engine';
+import { createFamilyUpdate, evaluateCareSignal } from '@/lib/care-agent';
+import { orchestrateCareEvent } from '@/lib/agent-orchestrator';
 
-const initialCheckIn: WellnessCheckIn = {
-  sleepHours: 6.2, energy: 6, stress: 7, movementMinutes: 18,
-  hydrationGlasses: 4, connection: 5, purpose: 7, note: '',
-};
-
-const presets: { label: string; detail: string; values: WellnessCheckIn }[] = [
-  { label: 'Stretched thin', detail: 'High load · low recovery', values: { sleepHours: 5.1, energy: 3, stress: 9, movementMinutes: 8, hydrationGlasses: 3, connection: 4, purpose: 6, note: '' } },
-  { label: 'Finding rhythm', detail: 'Steady · building capacity', values: { sleepHours: 7.2, energy: 7, stress: 4, movementMinutes: 28, hydrationGlasses: 7, connection: 7, purpose: 8, note: '' } },
-  { label: 'In my element', detail: 'Rested · connected · clear', values: { sleepHours: 7.6, energy: 9, stress: 2, movementMinutes: 42, hydrationGlasses: 8, connection: 9, purpose: 9, note: '' } },
+const residents = [
+  { initials: 'AM', name: 'Anita Menon', room: 'Willow 204', age: 76, state: 'Needs attention', tone: 'amber', baseline: 'Independent mobility · vegetarian · daughter receives daily updates' },
+  { initials: 'RS', name: 'Raghav Shah', room: 'Cedar 118', age: 82, state: 'Stable', tone: 'green', baseline: 'Walking support · low-sodium diet · weekly family update' },
+  { initials: 'LK', name: 'Leela Kapoor', room: 'Jasmine 302', age: 79, state: 'Stable', tone: 'green', baseline: 'Independent mobility · music therapy · social at lunch' },
 ];
 
-const dimensionIcons: Record<WellnessDimensionId, React.ReactNode> = {
-  sleep: <MoonStar size={16} />, energy: <Zap size={16} />, stress: <Waves size={16} />,
-  movement: <Activity size={16} />, nourishment: <Droplets size={16} />,
-  connection: <HeartHandshake size={16} />, purpose: <Compass size={16} />,
-};
+const quickSignals = [
+  { label: 'Low food intake', observation: 'Low intake at lunch and slower mobility than her 7-day baseline' },
+  { label: 'Missed medication', observation: 'Missed medication during the morning round' },
+  { label: 'Resident fell', observation: 'Caregiver reports an unwitnessed fall beside the bed' },
+  { label: 'Chest pain', observation: 'Resident reports sudden chest pain and sweating' },
+];
+
+const customerJobs = [
+  { role: 'Caregiver', job: 'Record an observation once', payoff: 'No duplicate calls or scattered notes', icon: <ClipboardCheck size={18} /> },
+  { role: 'Nurse or care lead', job: 'See what needs attention first', payoff: 'Policy context and a clear owner', icon: <Stethoscope size={18} /> },
+  { role: 'Facility operator', job: 'Know whether follow-up happened', payoff: 'One audit trail across every site', icon: <Building2 size={18} /> },
+  { role: 'Family', job: 'Receive a factual update', payoff: 'Reassurance without chasing staff', icon: <MessageCircle size={18} /> },
+];
+
+const pilotMetrics = [
+  { value: '−30%', label: 'Observation-to-owner time', note: 'Target versus week-one baseline' },
+  { value: '≥95%', label: 'Required fields complete', note: 'Target for escalated care notes' },
+  { value: '<30m', label: 'Approved family update', note: 'Median turnaround target' },
+  { value: '≥80%', label: 'Weekly staff adoption', note: 'Target among pilot users' },
+];
 
 export default function HomePage() {
-  const [checkIn, setCheckIn] = useState(initialCheckIn);
-  const [completed, setCompleted] = useState<string[]>([]);
-  const [showAgents, setShowAgents] = useState(true);
-  const [approvedRun, setApprovedRun] = useState<string | null>(null);
-  const run = useMemo(() => runWellnessCouncil(checkIn), [checkIn]);
-  const plan = run.plan;
+  const [selectedName, setSelectedName] = useState('Anita Menon');
+  const [observation, setObservation] = useState(quickSignals[0].observation);
+  const [approved, setApproved] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [familyUpdate, setFamilyUpdate] = useState('');
+  const [agentQuestion, setAgentQuestion] = useState('');
+  const [agentAnswer, setAgentAnswer] = useState('');
+  const selected = residents.find((resident) => resident.name === selectedName) ?? residents[0];
+  const recommendation = useMemo(() => evaluateCareSignal({ resident: selected.name, observation, source: 'caregiver' }), [selected.name, observation]);
+  const agentRun = useMemo(() => orchestrateCareEvent({ resident: selected.name, observation, source: 'caregiver' }), [selected.name, observation]);
 
-  const update = <K extends keyof WellnessCheckIn>(key: K, value: WellnessCheckIn[K]) => {
-    setCheckIn((current) => ({ ...current, [key]: value }));
-    setCompleted([]);
-    setApprovedRun(null);
+  const runSignal = (nextObservation: string) => {
+    setObservation(nextObservation);
+    setApproved(false);
+    setDismissed(false);
+    setFamilyUpdate('');
+  };
+
+  const askAgent = (event: { preventDefault: () => void }) => {
+    event.preventDefault();
+    const question = agentQuestion.trim();
+    if (!question) return;
+    const output = orchestrateCareEvent({ resident: selected.name, observation: question, source: 'caregiver' });
+    runSignal(question);
+    setAgentAnswer(`${output.runId}: ${output.recommendedAction} Routed to ${output.assignedTo}. Release remains held for staff approval.`);
+    setAgentQuestion('');
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f3f1e9] text-[#163a32]">
-      <div className="wellness-glow wellness-glow-one" /><div className="wellness-glow wellness-glow-two" />
-      <header className="relative z-10 mx-auto flex max-w-[1500px] items-center justify-between px-5 py-6 sm:px-8 lg:px-12">
-        <div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-[18px] bg-[#163a32] text-[#d8f56a] shadow-lg shadow-emerald-950/10"><Leaf size={22} /></div><div><p className="text-lg font-bold tracking-[-.03em]">Aaranya</p><p className="text-[10px] font-bold uppercase tracking-[.19em] text-[#75827c]">WholeLife Intelligence</p></div></div>
-        <nav className="hidden items-center gap-7 text-sm font-semibold text-[#52645e] md:flex" aria-label="Product navigation"><a href="#twin">Wellness Twin</a><a href="#plan">Daily plan</a><a href="#agents">Agent council</a></nav>
-        <button className="flex items-center gap-2 rounded-full border border-[#d3d9d0] bg-white/70 px-3 py-2 text-sm font-semibold shadow-sm backdrop-blur"><CircleUserRound size={19} /><span className="hidden sm:inline">Gowtham</span></button>
-      </header>
+    <main className="min-h-screen bg-[#f4f1e9] text-[#18332d]">
+      <div className="mx-auto flex min-h-screen max-w-[1600px]">
+        <aside className="hidden w-64 shrink-0 border-r border-[#d9ded5] bg-[#173f36] px-5 py-7 text-white lg:flex lg:flex-col">
+          <div className="flex items-center gap-3 px-2"><div className="grid size-10 place-items-center rounded-2xl bg-[#e1a83b] text-[#173f36]"><HeartPulse size={22} /></div><div><p className="text-xl font-semibold tracking-tight">Aaranya</p><p className="text-xs text-emerald-100/70">Care Intelligence</p></div></div>
+          <nav className="mt-10 space-y-2" aria-label="Primary navigation"><a className="nav-item nav-active" href="#command"><Home size={18} /> Shift command</a><a className="nav-item" href="#residents"><Users size={18} /> Residents</a><a className="nav-item" href="#agent"><Bot size={18} /> Agent workflow</a><a className="nav-item" href="#customer"><Target size={18} /> Pilot scorecard</a></nav>
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4"><div className="mb-2 flex items-center gap-2 text-sm font-medium"><ShieldCheck size={17} className="text-[#f1bf5d]" /> Staff keeps authority</div><p className="text-xs leading-5 text-emerald-50/65">Every task and family message stays held until a staff member approves it.</p></div>
+        </aside>
 
-      <section className="relative z-[1] mx-auto max-w-[1500px] px-5 pb-20 sm:px-8 lg:px-12">
-        <div className="grid items-end gap-8 pb-10 pt-8 lg:grid-cols-[1.1fr_.9fr] lg:pt-14">
-          <div>
-            <div className="flex flex-wrap gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-[#cad9c9] bg-white/60 px-3 py-1.5 text-xs font-bold uppercase tracking-[.12em] text-[#386558] backdrop-blur"><Sparkles size={14} className="text-[#9a6bee]" /> Supervised multi-agent wellness AI</div><div className="inline-flex items-center gap-2 rounded-full border border-[#d8c9ef] bg-[#f5efff]/75 px-3 py-1.5 text-xs font-bold uppercase tracking-[.12em] text-[#6f49bb]"><ShieldCheck size={14} /> Eval target ≥ 9.9</div></div>
-            <h1 className="mt-6 max-w-4xl text-[clamp(3.4rem,7vw,7.8rem)] font-semibold leading-[.86] tracking-[-.075em] text-[#153b32]">Your body isn’t a dashboard.<br/><span className="font-light italic text-[#8c63d5]">It’s a living system.</span></h1>
-            <p className="mt-7 max-w-2xl text-base leading-7 text-[#526760] sm:text-lg">Aaranya connects the signals that shape how you feel—sleep, energy, stress, movement, nourishment, connection and purpose—then finds the smallest action with the greatest return.</p>
+        <section id="command" className="min-w-0 flex-1 px-4 py-5 sm:px-8 lg:px-10">
+          <header className="flex items-center justify-between gap-4"><div><p className="eyebrow">Morning shift · Aaranya Bengaluru</p><h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Three residents need a decision</h1><p className="mt-2 text-sm text-[#687770]">Meera, nurse in charge · 42 residents · handover at 14:00</p></div><button className="relative grid size-11 shrink-0 place-items-center rounded-full border border-[#cfd7cf] bg-white shadow-sm" aria-label="Notifications"><Bell size={19} /><span className="absolute right-2 top-2 size-2 rounded-full bg-[#d5863d]" /></button></header>
+
+          <div className="mt-7 grid gap-5 2xl:grid-cols-[1.35fr_.65fr]">
+            <article className="overflow-hidden rounded-[28px] bg-[#173f36] p-5 text-white shadow-[0_18px_50px_rgba(23,63,54,.14)] sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-sm text-emerald-50/70"><Sparkles size={16} className="text-[#f1bf5d]" /> Decision ready for staff review</p><h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">{recommendation.headline}</h2></div><span className={`risk risk-${recommendation.risk}`}>{recommendation.risk}</span></div>
+              {!dismissed ? <div className="mt-7 rounded-2xl bg-white/9 p-5 ring-1 ring-white/10"><div className="flex items-start gap-4"><div className="grid size-11 shrink-0 place-items-center rounded-full bg-[#f3c76e] font-bold text-[#173f36]">{selected.initials}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">{selected.name} · {selected.room}</p><span className="text-xs text-[#ffd98a]">Confidence {Math.round(recommendation.confidence * 100)}%</span></div><p className="mt-2 text-sm leading-6 text-emerald-50/75">{recommendation.rationale} {recommendation.nextAction}</p><div className="mt-4 flex flex-wrap gap-2"><button onClick={() => setApproved(true)} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#173f36]"><Check size={16} /> {approved ? 'Assigned and logged' : 'Approve and assign'}</button><button onClick={() => setDismissed(true)} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20"><X size={16} /> Dismiss with reason</button></div></div></div></div> : <button onClick={() => setDismissed(false)} className="mt-7 text-sm font-semibold text-[#ffd98a]">Restore dismissed recommendation</button>}
+              <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs text-emerald-50/55"><span>One observation entered</span><span>{agentRun.policyCitations.length} policies checked</span><span>{agentRun.retrievedContext.length} resident facts retrieved</span><span>Outbound actions held</span></div>
+            </article>
+            <aside className="rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-6"><div className="flex items-center justify-between"><p className="eyebrow">Shift overview</p><span className="flex items-center gap-1.5 text-xs font-semibold text-[#3d795e]"><span className="size-2 rounded-full bg-[#55a16f]" /> Prototype live</span></div><div className="mt-5 grid grid-cols-2 gap-3"><Metric icon={<Users size={18} />} value="42" label="Residents" /><Metric icon={<Activity size={18} />} value="39" label="Stable today" /><Metric icon={<HeartPulse size={18} />} value="3" label="Need review" /><Metric icon={<MessageCircle size={18} />} value="8" label="Updates held" /></div><p className="mt-4 rounded-xl bg-[#f5e8bc] p-3 text-xs leading-5 text-[#705313]"><strong>Buyer value:</strong> the operator can see every open decision, owner and approval without calling each team.</p></aside>
           </div>
-          <div className="rounded-[28px] border border-white/70 bg-white/55 p-5 shadow-[0_24px_70px_rgba(42,71,61,.08)] backdrop-blur-xl">
-            <div className="flex items-center justify-between"><div><p className="wellness-eyebrow">Try a lived state</p><p className="mt-1 text-sm text-[#687a74]">See how the twin adapts in real time.</p></div><RefreshCw size={18} className="text-[#8b9a94]" /></div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">{presets.map((preset) => <button key={preset.label} onClick={() => { setCheckIn(preset.values); setCompleted([]); setApprovedRun(null); }} className="group rounded-2xl border border-[#dfe3dc] bg-white/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-[#9f82d7] hover:shadow-lg"><p className="font-bold">{preset.label}</p><p className="mt-1 text-xs text-[#71817b]">{preset.detail}</p><ArrowUpRight size={15} className="mt-4 text-[#8c63d5] opacity-40 transition group-hover:opacity-100" /></button>)}</div>
+
+          <div className="mt-6 grid gap-5 xl:grid-cols-[.78fr_1.22fr]">
+            <section id="residents" className="rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-7"><div className="flex items-end justify-between"><div><p className="eyebrow">Resident context</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Choose a resident</h2></div><span className="text-xs font-semibold text-[#6f7d77]">Prototype records</span></div><div className="mt-5 divide-y divide-[#e3e5de]">{residents.map((resident) => <button key={resident.name} onClick={() => { setSelectedName(resident.name); setApproved(false); setDismissed(false); setFamilyUpdate(''); }} className={`flex w-full items-center gap-4 py-4 text-left ${selected.name === resident.name ? 'resident-selected' : ''}`}><div className="grid size-10 place-items-center rounded-full bg-[#e8ece3] text-sm font-bold">{resident.initials}</div><div className="min-w-0 flex-1"><p className="font-semibold">{resident.name}</p><p className="text-sm text-[#64746e]">{resident.room}</p></div><span className={`status status-${resident.tone}`}>{resident.state}</span><ChevronRight size={18} className="text-[#87938e]" /></button>)}</div><div className="mt-4 rounded-2xl bg-[#f0eee6] p-4"><p className="text-xs font-bold text-[#6b7772]">KNOWN BASELINE</p><p className="mt-2 font-semibold">{selected.name}, {selected.age}</p><p className="mt-1 text-sm leading-6 text-[#66756f]">{selected.baseline}</p></div></section>
+
+            <section id="agent" className="rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="eyebrow">Inspectable workflow</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Follow the decision, not a chatbot</h2><p className="mt-1 text-sm text-[#6c7974]">Each agent has one bounded job. Staff approves every external action.</p></div><span className="rounded-full bg-[#e2ece3] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#35624f]">{agentRun.runId}</span></div>
+              <div className="mt-5 flex flex-wrap gap-2">{quickSignals.map((signal) => <button key={signal.label} onClick={() => runSignal(signal.observation)} className="signal-chip">{signal.label}</button>)}</div>
+              <div className="mt-5 overflow-hidden rounded-2xl border border-[#d7ded7] bg-[#f7f5ee]"><div className="divide-y divide-[#dfe3dd]">{agentRun.steps.map((step, index) => <div key={step.agent} className="grid grid-cols-[30px_minmax(0,1fr)_auto] items-start gap-3 px-4 py-3"><span className={`agent-index ${step.status === 'awaiting-human' ? 'agent-waiting' : ''}`}>{index + 1}</span><div><p className="text-sm font-bold">{step.agent}</p><p className="mt-0.5 text-xs leading-5 text-[#67766f]">{step.output}</p>{step.toolCalls.map((call) => <p key={call.tool} className="mt-1 font-mono text-[10px] text-[#477568]">{call.tool} · {call.status}</p>)}</div><span className={`agent-status ${step.status === 'awaiting-human' ? 'agent-status-waiting' : ''}`}>{step.status === 'awaiting-human' ? 'approval' : 'done'}</span></div>)}</div></div>
+              <form onSubmit={askAgent} className="mt-4 flex gap-2"><label className="sr-only" htmlFor="agent-question">Run a care event through the agent workflow</label><input id="agent-question" value={agentQuestion} onChange={(event) => setAgentQuestion(event.target.value)} placeholder="Try: Anita reports chest pain" className="min-w-0 flex-1 rounded-xl border border-[#cfd8d0] bg-white px-4 py-3 text-sm outline-none ring-[#347565] focus:ring-2" /><button className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#173f36] text-white" aria-label="Run agent workflow"><Send size={17} /></button></form>{agentAnswer && <p className="mt-3 rounded-xl bg-[#e9f0e8] p-4 text-sm leading-6 text-[#315148]" aria-live="polite">{agentAnswer}</p>}
+            </section>
           </div>
-        </div>
 
-        <div id="twin" className="grid gap-5 xl:grid-cols-[.78fr_1.22fr]">
-          <section className="wellness-card p-5 sm:p-7">
-            <div className="flex items-start justify-between gap-4"><div><p className="wellness-eyebrow">60-second check-in</p><h2 className="mt-2 text-2xl font-bold tracking-[-.035em]">Meet yourself where you are.</h2></div><span className="rounded-full bg-[#e9f3df] px-3 py-1.5 text-xs font-bold text-[#426c4d]">Private by design</span></div>
-            <div className="mt-7 space-y-5">
-              <Range label="Sleep" value={checkIn.sleepHours} min={3} max={10} step={0.1} suffix="h" onChange={(value) => update('sleepHours', value)} />
-              <Range label="Energy" value={checkIn.energy} min={1} max={10} suffix="/10" onChange={(value) => update('energy', value)} />
-              <Range label="Stress load" value={checkIn.stress} min={1} max={10} suffix="/10" onChange={(value) => update('stress', value)} inverse />
-              <Range label="Movement" value={checkIn.movementMinutes} min={0} max={60} suffix=" min" onChange={(value) => update('movementMinutes', value)} />
-              <Range label="Hydration" value={checkIn.hydrationGlasses} min={0} max={12} suffix=" glasses" onChange={(value) => update('hydrationGlasses', value)} />
-              <div className="grid grid-cols-2 gap-4"><Range label="Connection" value={checkIn.connection} min={1} max={10} suffix="/10" onChange={(value) => update('connection', value)} /><Range label="Purpose" value={checkIn.purpose} min={1} max={10} suffix="/10" onChange={(value) => update('purpose', value)} /></div>
-            </div>
-            <label className="mt-6 block"><span className="wellness-eyebrow">What is present today?</span><textarea value={checkIn.note} onChange={(event) => update('note', event.target.value)} placeholder="Optional reflection—e.g. restless night, important meeting, feeling disconnected…" className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-[#d8dfd6] bg-[#fbfaf6] p-4 text-sm leading-6 outline-none transition focus:border-[#8c63d5] focus:ring-4 focus:ring-[#8c63d5]/10" /></label>
-          </section>
+          <section className="mt-6 grid gap-5 rounded-[28px] bg-[#dfe8dc] p-5 sm:p-7 lg:grid-cols-[.8fr_1.2fr]"><div><p className="eyebrow">Family trust</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">A useful update without another phone chase</h2><p className="mt-3 max-w-md text-sm leading-6 text-[#597068]">Aaranya drafts only from verified care events. Staff can edit and approve the message before anything leaves the facility.</p><button onClick={() => setFamilyUpdate(createFamilyUpdate(selected.name, ['Joined the morning activity.', 'Lunch and hydration were recorded.', 'The care team completed a wellbeing check.']))} className="mt-5 rounded-xl bg-[#173f36] px-4 py-3 text-sm font-semibold text-white">Draft update for {selected.name.split(' ')[0]}’s family</button></div><div className="rounded-2xl bg-[#fffdf8] p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-full bg-[#ead8ae] text-xs font-bold">FM</div><div><p className="text-sm font-semibold">Family message preview</p><p className="text-xs text-[#75817c]">Not sent · staff approval required</p></div></div>{familyUpdate && <button onClick={() => setFamilyUpdate('')} className="text-xs font-bold text-[#32705f]">Clear</button>}</div><p className="mt-5 min-h-20 text-sm leading-6 text-[#50645d]">{familyUpdate || 'Generate a factual update from today’s approved care notes.'}</p></div></section>
 
-          <section className="overflow-hidden rounded-[32px] bg-[#143a32] text-white shadow-[0_30px_90px_rgba(20,58,50,.22)]">
-            <div className="grid gap-5 p-5 sm:p-8 lg:grid-cols-[.8fr_1.2fr]">
-              <div className="flex flex-col rounded-[26px] bg-white/[.07] p-5 ring-1 ring-white/10">
-                <div className="flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-[.14em] text-emerald-100/65">Live Wellness Twin</p><span className="flex items-center gap-1.5 text-xs text-[#d8f56a]"><span className="size-2 animate-pulse rounded-full bg-[#d8f56a]" /> Synthesised</span></div>
-                <div className="mx-auto mt-8 grid size-48 place-items-center rounded-full p-3" style={{ background: `conic-gradient(#d8f56a ${plan.score * 3.6}deg, rgba(255,255,255,.1) 0deg)` }}><div className="grid size-full place-items-center rounded-full bg-[#143a32] text-center"><div><p className="text-6xl font-semibold tracking-[-.07em]">{plan.score}</p><p className="mt-1 text-xs font-bold uppercase tracking-[.14em] text-emerald-100/55">WholeLife score</p></div></div></div>
-                <div className="mt-7"><span className="rounded-full bg-[#d8f56a] px-3 py-1.5 text-xs font-black uppercase tracking-[.11em] text-[#143a32]">{plan.state} mode</span><h2 className="mt-4 text-2xl font-semibold leading-tight tracking-[-.035em]">{plan.headline}</h2><p className="mt-3 text-sm leading-6 text-emerald-50/60">{plan.explanation}</p></div>
-                <div className="mt-auto pt-6"><div className="flex items-center gap-2 text-xs text-emerald-50/60"><ShieldCheck size={15} className="text-[#d8f56a]" /> Wellness guidance, never diagnosis</div></div>
-              </div>
-              <div className="rounded-[26px] bg-[#f6f4ed] p-5 text-[#173b33] sm:p-6">
-                <div className="flex items-center justify-between"><div><p className="wellness-eyebrow">Signal map</p><h3 className="mt-1 text-xl font-bold tracking-tight">Seven dimensions. One system.</h3></div><Brain size={22} className="text-[#8c63d5]" /></div>
-                <div className="mt-6 space-y-3">{plan.dimensions.map((dimension) => <div key={dimension.id} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2"><div className="flex items-center gap-2 text-sm font-semibold"><span className={`dimension-icon dimension-${dimension.status}`}>{dimensionIcons[dimension.id]}</span>{dimension.label}</div><span className="text-sm font-black tabular-nums">{dimension.score}</span><div className="col-span-2 h-1.5 overflow-hidden rounded-full bg-[#e1e4dc]"><div className={`h-full rounded-full dimension-bar-${dimension.status}`} style={{ width: `${dimension.score}%` }} /></div></div>)}</div>
-                <div className="mt-6 rounded-2xl border border-[#dedfd8] bg-white/70 p-4"><p className="text-xs font-bold uppercase tracking-[.12em] text-[#75827c]">Pattern, not judgement</p><p className="mt-2 text-sm leading-6 text-[#5f716a]">Low scores are invitations—not failures. Aaranya sequences support around capacity, context and safety.</p></div>
-              </div>
-            </div>
-          </section>
-        </div>
+          <section id="customer" className="mt-6 rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-7"><div className="grid gap-8 xl:grid-cols-[1.05fr_.95fr]"><div><p className="eyebrow">Customer jobs</p><h2 className="mt-2 text-3xl font-semibold tracking-[-.035em]">Four people must trust the same workflow</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{customerJobs.map((item) => <article key={item.role} className="customer-job"><div className="customer-icon">{item.icon}</div><div><p className="text-xs font-black uppercase tracking-wide text-[#74817c]">{item.role}</p><p className="mt-1 font-semibold">{item.job}</p><p className="mt-1 text-sm leading-5 text-[#66766f]">{item.payoff}</p></div></article>)}</div></div><div className="rounded-2xl bg-[#173f36] p-5 text-white sm:p-6"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[.12em] text-[#f1bf5d]">90-day pilot scorecard</p><h3 className="mt-2 text-xl font-semibold">Targets to validate, not traction claims</h3></div><Target className="text-[#f1bf5d]" /></div><div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-6">{pilotMetrics.map((metric) => <div key={metric.label}><p className="text-2xl font-bold text-[#f3c76e]">{metric.value}</p><p className="mt-1 text-sm font-semibold">{metric.label}</p><p className="mt-1 text-[11px] leading-4 text-emerald-50/55">{metric.note}</p></div>)}</div><div className="mt-6 flex items-start gap-3 border-t border-white/10 pt-5 text-xs leading-5 text-emerald-50/65"><Clock3 size={16} className="mt-0.5 shrink-0 text-[#f1bf5d]" /> Week one establishes each facility’s baseline. Weeks two to twelve measure improvement and staff adoption.</div></div></div></section>
 
-        {plan.safety.level !== 'standard' ? <section className="mt-5 rounded-[28px] border border-[#d9675d]/30 bg-[#fff0ed] p-6 text-[#7e302b]"><div className="flex items-start gap-4"><ShieldCheck className="mt-1 shrink-0" /><div><p className="text-xs font-black uppercase tracking-[.13em]">Human support comes first</p><h2 className="mt-2 text-2xl font-bold">Lifestyle suggestions paused.</h2><p className="mt-2 max-w-3xl leading-7">{plan.safety.message}</p></div></div></section> : (
-          <section id="plan" className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
-            <div className="wellness-card p-5 sm:p-7"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="wellness-eyebrow">Your next 24 hours</p><h2 className="mt-2 text-3xl font-bold tracking-[-.04em]">Tiny actions. Compounding change.</h2></div><span className="text-xs font-semibold text-[#77847f]">{completed.length}/{plan.actions.length} complete</span></div><div className="mt-6 space-y-3">{plan.actions.map((action, index) => { const done = completed.includes(action.id); return <button key={action.id} disabled={approvedRun !== run.runId} onClick={() => setCompleted((current) => done ? current.filter((id) => id !== action.id) : [...current, action.id])} className={`action-card ${done ? 'action-done' : ''} disabled:cursor-not-allowed disabled:opacity-60`}><span className="action-check">{done ? <Check size={16} /> : index + 1}</span><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><strong>{action.title}</strong><span className="rounded-full bg-[#eef0e9] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#718079]">{action.duration}</span></span><span className="mt-1 block text-sm leading-6 text-[#66766f]">{action.detail}</span></span><ChevronRight size={18} className="text-[#9aa49f]" /></button>; })}</div><div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[#d8ded7] bg-[#f4f3ed] p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><FileCheck2 size={19} className="mt-0.5 shrink-0 text-[#7651bd]" /><div><p className="text-sm font-bold">Human approval gate</p><p className="mt-1 text-xs leading-5 text-[#687872]">{approvedRun === run.runId ? 'Plan accepted. You can now mark actions complete.' : 'Review the evidence and accept before activating this plan.'}</p></div></div><button onClick={() => setApprovedRun(run.runId)} disabled={approvedRun === run.runId} className="shrink-0 rounded-full bg-[#173b33] px-4 py-2 text-xs font-black text-[#d8f56a] disabled:opacity-60">{approvedRun === run.runId ? 'Plan accepted' : 'Accept plan'}</button></div></div>
-            <aside className="overflow-hidden rounded-[30px] bg-[#d9c9fa] p-6 sm:p-8"><Sun size={28} className="text-[#6f49bb]" /><p className="mt-8 text-xs font-black uppercase tracking-[.13em] text-[#6f49bb]">Why this works</p><blockquote className="mt-3 text-3xl font-semibold leading-tight tracking-[-.04em] text-[#2d2340]">“The best plan is the one your nervous system can actually carry.”</blockquote><p className="mt-5 text-sm leading-6 text-[#594d6d]">Instead of maximising every metric, Aaranya finds the current constraint and recommends a dose small enough to complete today.</p><div className="mt-8 grid grid-cols-3 gap-2 text-center"><Proof value="7" label="signals" /><Proof value="6" label="stages" /><Proof value="100%" label="traceable" /></div></aside>
-          </section>
-        )}
-
-        <section id="agents" className="mt-5 wellness-card p-5 sm:p-7">
-          <button onClick={() => setShowAgents((value) => !value)} className="flex w-full items-center justify-between gap-4 text-left"><div><p className="wellness-eyebrow">Supervised agent run · {run.runId}</p><h2 className="mt-2 text-2xl font-bold tracking-[-.035em]">Six inspectable stages. One human decision.</h2></div><span className="rounded-full bg-[#edf1e8] px-3 py-2 text-xs font-bold text-[#4d675f]">{showAgents ? 'Hide trace' : 'Show trace'}</span></button>
-          {showAgents && <><div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{run.stages.map((stage, index) => <article key={stage.id} className="rounded-2xl border border-[#dce1d9] bg-[#faf9f4] p-5"><div className="flex items-center justify-between"><span className="grid size-8 place-items-center rounded-full bg-[#173b33] text-xs font-black text-[#d8f56a]">0{index + 1}</span><span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide ${stage.status === 'awaiting-human' ? 'bg-[#f4dfca] text-[#9b5c2d]' : stage.status === 'guarded' ? 'bg-[#e8def8] text-[#704caf]' : 'bg-[#dfeedd] text-[#3d764d]'}`}>{stage.status}</span></div><p className="mt-5 font-bold">{stage.agent}</p><p className="mt-1 text-[10px] font-black uppercase tracking-[.12em] text-[#8a9691]">{stage.role}</p><p className="mt-3 text-sm leading-6 text-[#64746e]">{stage.finding}</p>{stage.toolCalls.length > 0 && <div className="mt-4 flex flex-wrap gap-1.5">{stage.toolCalls.map((call) => <span key={call.tool} className="rounded-md bg-[#ecefe9] px-2 py-1 font-mono text-[9px] text-[#53645e]">{call.tool}</span>)}</div>}</article>)}</div><div className="mt-4 grid gap-4 rounded-2xl bg-[#173b33] p-5 text-white lg:grid-cols-[.75fr_1.25fr]"><div><div className="flex items-center gap-2 text-[#d8f56a]"><Database size={17} /><p className="text-xs font-black uppercase tracking-[.13em]">Evidence retrieved</p></div><p className="mt-3 text-sm leading-6 text-emerald-50/60">Every recommendation maps to a versioned evidence card. The safety policy is always retrieved and cannot be overridden by reflection text.</p><div className="mt-4 flex flex-wrap gap-2"><Quality passed={run.quality.grounded} label="Grounded" /><Quality passed={run.quality.safe} label="Safe" /><Quality passed={run.quality.actionable} label="Actionable" /><Quality passed={run.quality.criticPassed} label="Critic passed" /></div></div><div className="grid gap-2 sm:grid-cols-2">{run.evidence.map((item) => <article key={item.id} className="rounded-xl bg-white/[.08] p-3 ring-1 ring-white/10"><div className="flex items-center justify-between gap-3"><p className="text-xs font-bold">{item.title}</p><span className="font-mono text-[9px] text-[#d8f56a]">{item.id}</span></div><p className="mt-1.5 text-[11px] leading-5 text-emerald-50/55">{item.guidance}</p><p className="mt-2 text-[9px] font-bold uppercase tracking-wide text-emerald-50/35">{item.source}</p></article>)}</div></div></>}
+          <footer className="flex flex-col gap-2 px-2 py-7 text-xs text-[#76827d] sm:flex-row sm:items-center sm:justify-between"><p>Prototype data only · No real resident information</p><p>37 automated tests · 350/350 software checks · Clinical validation pending</p></footer>
         </section>
-        <footer className="mt-5 flex flex-col gap-4 rounded-[28px] bg-[#173b33] p-6 text-white sm:flex-row sm:items-center sm:justify-between sm:p-8"><div><p className="text-lg font-bold">Aaranya WholeLife Intelligence</p><p className="mt-1 text-sm text-emerald-50/55">Prototype data only · No diagnosis · No autonomous treatment</p></div><div className="flex items-center gap-2 text-sm font-semibold text-[#d8f56a]"><ShieldCheck size={18} /> Safety guardian active</div></footer>
-      </section>
+      </div>
     </main>
   );
 }
 
-function Range({ label, value, min, max, step = 1, suffix, onChange, inverse = false }: { label: string; value: number; min: number; max: number; step?: number; suffix: string; onChange: (value: number) => void; inverse?: boolean }) {
-  const percentage = ((value - min) / (max - min)) * 100;
-  return <label className="block"><span className="flex items-center justify-between text-sm"><strong>{label}</strong><span className={`font-bold tabular-nums ${inverse && value >= 8 ? 'text-[#bf554b]' : 'text-[#6f49bb]'}`}>{Number.isInteger(value) ? value : value.toFixed(1)}{suffix}</span></span><input aria-label={label} className="wellness-range mt-2" type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} style={{ background: `linear-gradient(90deg, ${inverse ? '#9a6bee' : '#4e8a70'} ${percentage}%, #e1e4dc ${percentage}%)` }} /></label>;
+function Metric({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+  return <div className="rounded-2xl bg-[#f1f0e8] p-4"><div className="text-[#327566]">{icon}</div><p className="mt-5 text-2xl font-semibold tracking-tight">{value}</p><p className="mt-0.5 text-xs text-[#6f7d77]">{label}</p></div>;
 }
-
-function Proof({ value, label }: { value: string; label: string }) { return <div className="rounded-2xl bg-white/40 p-3"><p className="text-xl font-black text-[#35274e]">{value}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#726587]">{label}</p></div>; }
-
-function Quality({ passed, label }: { passed: boolean; label: string }) { return <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${passed ? 'bg-[#d8f56a] text-[#173b33]' : 'bg-[#d9675d] text-white'}`}>{passed ? '✓' : '!'} {label}</span>; }

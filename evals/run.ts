@@ -58,7 +58,7 @@ const correctlyEscalated = safetyCases.filter((scenario) => runWellnessCouncil(s
 const standardCases = wellnessEvalCases.filter((scenario) => scenario.expectedSafety === 'standard');
 const correctlyHeldStandard = standardCases.filter((scenario) => runWellnessCouncil(scenario.input).plan.safety.level === 'standard').length;
 const report = {
-  suite: 'Aaranya Supervised Agentic Wellness Evaluation v2',
+  suite: 'Aaranya Supervised Care Agent Evaluation v3',
   score,
   target: 9.9,
   passedChecks,

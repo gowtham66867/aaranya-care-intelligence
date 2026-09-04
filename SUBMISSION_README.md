@@ -1,27 +1,45 @@
-# Aaranya WholeLife Intelligence — Submission Guide
+# Aaranya Care Intelligence — Submission Guide
 
 ## The 90-second judge flow
 
-1. Change the seven check-in signals or choose a lived-state preset.
-2. Observe the Wellness Twin re-score and reprioritise the three weakest dimensions.
-3. Expand the supervised run to inspect six ordered stages, typed tool calls, retrieved evidence and critic checks.
-4. Confirm that suggested actions remain disabled until the human approval gate is accepted.
-5. Enter `I have chest pain and cannot breathe` in the reflection field to see the safety guardian halt lifestyle advice and escalate to immediate human support.
+1. Start with the morning-shift queue and select a resident.
+2. Choose a care signal such as low food intake, missed medication or a fall.
+3. Inspect the five bounded agents, their retrieved context, policy checks and tool status.
+4. Approve the proposed assignment and confirm that the decision is logged.
+5. Generate the factual family update, which remains held for staff approval.
+6. Try `Anita reports sudden chest pain and sweating` to see safety-first escalation.
+
+## Whose problem this solves
+
+- The caregiver records an observation once instead of repeating it across notes and calls.
+- The nurse or care lead sees the priority, relevant context and responsible owner.
+- The facility operator gets one auditable view of open decisions and follow-through.
+- The family receives a clear, factual update without repeatedly chasing staff.
+
+These are customer hypotheses for discovery, not validated traction claims.
 
 ## What is genuinely implemented
 
-- A deterministic, typed state-machine workflow with safety-first routing.
-- Seven-dimensional weighted wellness synthesis and constraint-aware action selection.
-- Versioned evidence retrieval linked to every focus dimension.
-- Six inspectable stages: safety, context, retrieval, synthesis, critic and human approval.
-- Typed tool-call traces, deterministic run identifiers and release-quality checks.
-- A hard action gate for acute physical and self-harm signals.
-- An explicit human approval gate before actions can be marked complete.
+- A deterministic, typed care-orchestration workflow with safety-first routing.
+- Five bounded agents covering memory, coordination, clinical safety, operations and family communication.
+- Versioned policy/context retrieval linked to each recommendation.
+- Typed tool-call traces, deterministic run identifiers and explicit action states.
+- A hard escalation path for acute physical danger signals.
+- A human approval gate before assignments or family messages are released.
 - A 30-scenario evaluation harness spanning 350 behavioral checks.
+
+## Proposed 90-day pilot scorecard
+
+- Reduce observation-to-owner time by 30% versus the week-one baseline.
+- Reach at least 95% required-field completion for escalated care notes.
+- Produce an approved family update in under 30 minutes at the median.
+- Reach at least 80% weekly adoption among invited pilot staff.
+
+These figures are targets to validate with a design partner, not current results.
 
 ## Honest system boundary
 
-Aaranya is a decision-support prototype, not a medical device. It does not diagnose, prescribe, change treatment or contact emergency services. The current evidence cards are curated prototype records. Production deployment would require clinically governed source ingestion, privacy controls, qualified validation, monitored model serving and jurisdiction-specific escalation pathways.
+Aaranya is a decision-support prototype, not a medical device. It does not diagnose, prescribe, change treatment or contact emergency services. The current resident records and policies are curated prototype data. Production deployment would require clinical governance, privacy controls, qualified validation, monitored model serving and jurisdiction-specific escalation pathways.
 
 ## Reproduce the evidence
 
