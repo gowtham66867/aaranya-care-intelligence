@@ -8,11 +8,12 @@ import {
 } from 'lucide-react';
 import { createFamilyUpdate, evaluateCareSignal } from '@/lib/care-agent';
 import { orchestrateCareEvent } from '@/lib/agent-orchestrator';
+import { runWellnessCouncil } from '@/lib/wellness-agent-runtime';
 
 const residents = [
-  { initials: 'AM', name: 'Anita Menon', room: 'Willow 204', age: 76, state: 'Needs attention', tone: 'amber', baseline: 'Independent mobility · vegetarian · daughter receives daily updates' },
-  { initials: 'RS', name: 'Raghav Shah', room: 'Cedar 118', age: 82, state: 'Stable', tone: 'green', baseline: 'Walking support · low-sodium diet · weekly family update' },
-  { initials: 'LK', name: 'Leela Kapoor', room: 'Jasmine 302', age: 79, state: 'Stable', tone: 'green', baseline: 'Independent mobility · music therapy · social at lunch' },
+  { initials: 'AM', name: 'Anita Menon', room: 'Willow 204', age: 76, state: 'Needs attention', tone: 'amber', baseline: 'Independent mobility · vegetarian · daughter receives daily updates', wellness: { sleepHours: 5.8, energy: 4, stress: 8, movementMinutes: 12, hydrationGlasses: 4, connection: 6, purpose: 7, note: 'Low intake at lunch and slower mobility than her 7-day baseline.' } },
+  { initials: 'RS', name: 'Raghav Shah', room: 'Cedar 118', age: 82, state: 'Stable', tone: 'green', baseline: 'Walking support · low-sodium diet · weekly family update', wellness: { sleepHours: 7.2, energy: 7, stress: 4, movementMinutes: 25, hydrationGlasses: 7, connection: 8, purpose: 7, note: 'Feeling steady and looking forward to the afternoon garden group.' } },
+  { initials: 'LK', name: 'Leela Kapoor', room: 'Jasmine 302', age: 79, state: 'Stable', tone: 'green', baseline: 'Independent mobility · music therapy · social at lunch', wellness: { sleepHours: 6.8, energy: 6, stress: 5, movementMinutes: 20, hydrationGlasses: 6, connection: 9, purpose: 8, note: 'Music and lunch group are going well; mild morning tiredness.' } },
 ];
 
 const quickSignals = [
@@ -47,6 +48,7 @@ export default function HomePage() {
   const selected = residents.find((resident) => resident.name === selectedName) ?? residents[0];
   const recommendation = useMemo(() => evaluateCareSignal({ resident: selected.name, observation, source: 'caregiver' }), [selected.name, observation]);
   const agentRun = useMemo(() => orchestrateCareEvent({ resident: selected.name, observation, source: 'caregiver' }), [selected.name, observation]);
+  const wellnessRun = useMemo(() => runWellnessCouncil(selected.wellness), [selected.wellness]);
 
   const runSignal = (nextObservation: string) => {
     setObservation(nextObservation);
@@ -70,7 +72,7 @@ export default function HomePage() {
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
         <aside className="hidden w-64 shrink-0 border-r border-[#d9ded5] bg-[#173f36] px-5 py-7 text-white lg:flex lg:flex-col">
           <div className="flex items-center gap-3 px-2"><div className="grid size-10 place-items-center rounded-2xl bg-[#e1a83b] text-[#173f36]"><HeartPulse size={22} /></div><div><p className="text-xl font-semibold tracking-tight">Aaranya</p><p className="text-xs text-emerald-100/70">Care Intelligence</p></div></div>
-          <nav className="mt-10 space-y-2" aria-label="Primary navigation"><a className="nav-item nav-active" href="#command"><Home size={18} /> Shift command</a><a className="nav-item" href="#residents"><Users size={18} /> Residents</a><a className="nav-item" href="#agent"><Bot size={18} /> Agent workflow</a><a className="nav-item" href="#customer"><Target size={18} /> Pilot scorecard</a></nav>
+          <nav className="mt-10 space-y-2" aria-label="Primary navigation"><a className="nav-item nav-active" href="#command"><Home size={18} /> Shift command</a><a className="nav-item" href="#residents"><Users size={18} /> Residents</a><a className="nav-item" href="#wholelife"><Sparkles size={18} /> WholeLife pulse</a><a className="nav-item" href="#agent"><Bot size={18} /> Agent workflow</a><a className="nav-item" href="#customer"><Target size={18} /> Pilot scorecard</a></nav>
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4"><div className="mb-2 flex items-center gap-2 text-sm font-medium"><ShieldCheck size={17} className="text-[#f1bf5d]" /> Staff keeps authority</div><p className="text-xs leading-5 text-emerald-50/65">Every task and family message stays held until a staff member approves it.</p></div>
         </aside>
 
@@ -85,6 +87,23 @@ export default function HomePage() {
             </article>
             <aside className="rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-6"><div className="flex items-center justify-between"><p className="eyebrow">Shift overview</p><span className="flex items-center gap-1.5 text-xs font-semibold text-[#3d795e]"><span className="size-2 rounded-full bg-[#55a16f]" /> Prototype live</span></div><div className="mt-5 grid grid-cols-2 gap-3"><Metric icon={<Users size={18} />} value="42" label="Residents" /><Metric icon={<Activity size={18} />} value="39" label="Stable today" /><Metric icon={<HeartPulse size={18} />} value="3" label="Need review" /><Metric icon={<MessageCircle size={18} />} value="8" label="Updates held" /></div><p className="mt-4 rounded-xl bg-[#f5e8bc] p-3 text-xs leading-5 text-[#705313]"><strong>Buyer value:</strong> the operator can see every open decision, owner and approval without calling each team.</p></aside>
           </div>
+
+          <section id="wholelife" className="mt-6 overflow-hidden rounded-[28px] border border-[#d8ded7] bg-[#fffdf8]">
+            <div className="grid lg:grid-cols-[.82fr_1.18fr]">
+              <div className="wholelife-hero p-5 text-white sm:p-7">
+                <div className="flex items-center justify-between gap-4"><p className="text-xs font-black uppercase tracking-[.14em] text-[#f1bf5d]">WholeLife Pulse</p><span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold text-emerald-50">7 dimensions · today</span></div>
+                <div className="mt-6 flex items-center gap-5"><div className="wellness-score" style={{ '--score': `${wellnessRun.plan.score * 3.6}deg` } as React.CSSProperties}><div><strong>{wellnessRun.plan.score}</strong><span>/100</span></div></div><div><p className="text-sm text-emerald-50/65">Resident state</p><h2 className="text-3xl font-semibold tracking-tight">{wellnessRun.plan.state}</h2><p className="mt-2 max-w-sm text-sm leading-6 text-emerald-50/70">{wellnessRun.plan.headline}</p></div></div>
+                <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">{wellnessRun.plan.actions.map((action) => <article key={action.id} className="rounded-2xl bg-white/8 p-3 ring-1 ring-white/10"><p className="text-[10px] font-black uppercase tracking-wide text-[#f1bf5d]">{action.duration}</p><p className="mt-1 text-sm font-semibold">{action.title}</p></article>)}</div>
+                <p className="mt-5 text-xs leading-5 text-emerald-50/55">Draft actions are decision support only. Staff adapts or rejects every plan before it reaches the resident.</p>
+              </div>
+              <div className="p-5 sm:p-7">
+                <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="eyebrow">Whole-person evidence</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">See the pattern behind the alert</h2></div><span className="rounded-full bg-[#e8efe6] px-3 py-1.5 font-mono text-[10px] font-bold text-[#42685c]">{wellnessRun.runId}</span></div>
+                <div className="mt-5 space-y-3">{wellnessRun.plan.dimensions.map((dimension) => <div key={dimension.id} className="grid grid-cols-[92px_minmax(0,1fr)_34px] items-center gap-3"><span className="text-xs font-bold text-[#536760]">{dimension.label}</span><div className="h-2 overflow-hidden rounded-full bg-[#e5e8e1]"><div className={`h-full rounded-full wellness-bar wellness-${dimension.status}`} style={{ width: `${dimension.score}%` }} /></div><span className="text-right text-xs font-black">{dimension.score}</span></div>)}</div>
+                <div className="mt-6 grid gap-3 sm:grid-cols-3"><ProofChip value={`${wellnessRun.evidence.length}`} label="Evidence cards" /><ProofChip value={`${wellnessRun.stages.length}`} label="Agent stages" /><ProofChip value="Held" label="Human release" /></div>
+                <div className="mt-5 flex flex-wrap gap-2">{wellnessRun.stages.map((stage) => <span key={stage.id} className={`runtime-stage ${stage.status === 'awaiting-human' ? 'runtime-held' : ''}`} title={stage.finding}>{stage.agent}<Check size={12} /></span>)}</div>
+              </div>
+            </div>
+          </section>
 
           <div className="mt-6 grid gap-5 xl:grid-cols-[.78fr_1.22fr]">
             <section id="residents" className="rounded-[28px] border border-[#d8ded7] bg-[#fffdf8] p-5 sm:p-7"><div className="flex items-end justify-between"><div><p className="eyebrow">Resident context</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">Choose a resident</h2></div><span className="text-xs font-semibold text-[#6f7d77]">Prototype records</span></div><div className="mt-5 divide-y divide-[#e3e5de]">{residents.map((resident) => <button key={resident.name} onClick={() => { setSelectedName(resident.name); setApproved(false); setDismissed(false); setFamilyUpdate(''); }} className={`flex w-full items-center gap-4 py-4 text-left ${selected.name === resident.name ? 'resident-selected' : ''}`}><div className="grid size-10 place-items-center rounded-full bg-[#e8ece3] text-sm font-bold">{resident.initials}</div><div className="min-w-0 flex-1"><p className="font-semibold">{resident.name}</p><p className="text-sm text-[#64746e]">{resident.room}</p></div><span className={`status status-${resident.tone}`}>{resident.state}</span><ChevronRight size={18} className="text-[#87938e]" /></button>)}</div><div className="mt-4 rounded-2xl bg-[#f0eee6] p-4"><p className="text-xs font-bold text-[#6b7772]">KNOWN BASELINE</p><p className="mt-2 font-semibold">{selected.name}, {selected.age}</p><p className="mt-1 text-sm leading-6 text-[#66756f]">{selected.baseline}</p></div></section>
@@ -110,4 +129,8 @@ export default function HomePage() {
 
 function Metric({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return <div className="rounded-2xl bg-[#f1f0e8] p-4"><div className="text-[#327566]">{icon}</div><p className="mt-5 text-2xl font-semibold tracking-tight">{value}</p><p className="mt-0.5 text-xs text-[#6f7d77]">{label}</p></div>;
+}
+
+function ProofChip({ value, label }: { value: string; label: string }) {
+  return <div className="rounded-2xl bg-[#f0f2eb] p-3"><p className="text-lg font-black text-[#245d4e]">{value}</p><p className="text-[10px] font-bold uppercase tracking-wide text-[#718079]">{label}</p></div>;
 }

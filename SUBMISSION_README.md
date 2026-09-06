@@ -1,13 +1,15 @@
 # Aaranya Care Intelligence — Submission Guide
 
+**One-line pitch:** Aaranya is a supervised multi-agent operating system that turns one senior-care observation into an evidence-grounded decision, a seven-dimension WholeLife plan and a family-ready update—without removing human authority.
+
 ## The 90-second judge flow
 
 1. Start with the morning-shift queue and select a resident.
 2. Choose a care signal such as low food intake, missed medication or a fall.
-3. Inspect the five bounded agents, their retrieved context, policy checks and tool status.
-4. Approve the proposed assignment and confirm that the decision is logged.
-5. Generate the factual family update, which remains held for staff approval.
-6. Try `Anita reports sudden chest pain and sweating` to see safety-first escalation.
+3. Inspect Anita's seven-dimension WholeLife Pulse, evidence cards and six supervised agent stages.
+4. Inspect the five care agents, their retrieved context, policy checks and tool status.
+5. Approve the proposed assignment and generate the factual family update; both remain human-governed.
+6. Try `Anita reports sudden chest pain and sweating` to see safety-first escalation override normal planning.
 
 ## Whose problem this solves
 
@@ -26,6 +28,8 @@ These are customer hypotheses for discovery, not validated traction claims.
 - Typed tool-call traces, deterministic run identifiers and explicit action states.
 - A hard escalation path for acute physical danger signals.
 - A human approval gate before assignments or family messages are released.
+- A seven-dimension WholeLife Pulse covering sleep, energy, stress, movement, nourishment, connection and purpose.
+- Evidence-grounded wellness micro-actions with a critic agent and explicit human acceptance gate.
 - A 30-scenario evaluation harness spanning 350 behavioral checks.
 
 ## Proposed 90-day pilot scorecard

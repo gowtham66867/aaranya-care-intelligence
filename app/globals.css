@@ -30,4 +30,15 @@ button { cursor: pointer; }
 .agent-status-waiting { background: #f6e8bd; color: #795713; }
 .customer-job { display: flex; min-height: 118px; gap: .8rem; border: 1px solid #dde2db; border-radius: 1rem; background: #f8f7f1; padding: 1rem; }
 .customer-icon { display: grid; width: 2.2rem; height: 2.2rem; flex: 0 0 auto; place-items: center; border-radius: .75rem; background: #e1eadf; color: #2c6c59; }
+.wholelife-hero { background: radial-gradient(circle at 12% 4%, rgb(73 133 108 / .62), transparent 38%), #173f36; }
+.wellness-score { display: grid; width: 7rem; height: 7rem; flex: 0 0 auto; place-items: center; border-radius: 999px; background: conic-gradient(#f1bf5d var(--score), rgb(255 255 255 / .12) 0); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .1); }
+.wellness-score > div { display: grid; width: 5.35rem; height: 5.35rem; place-content: center; border-radius: inherit; background: #173f36; text-align: center; }
+.wellness-score strong { display: block; font-size: 1.8rem; line-height: 1; }
+.wellness-score span { margin-top: .2rem; font-size: .65rem; color: rgb(236 253 245 / .55); }
+.wellness-bar { min-width: .35rem; }
+.wellness-strong { background: #4f9870; }
+.wellness-steady { background: #d5a13e; }
+.wellness-support { background: #c56b4e; }
+.runtime-stage { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; background: #e1eee4; padding: .4rem .65rem; color: #2b684f; font-size: .65rem; font-weight: 800; }
+.runtime-held { background: #f5e8bc; color: #795713; }
 @media (max-width: 520px) { .status { display: none; } }

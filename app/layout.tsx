@@ -15,16 +15,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://aaranya-care-intelligence.trilogy-1207.chatgpt.site'),
   title: 'Aaranya Care Intelligence',
-  description: 'A human-supervised care workflow for senior-living operators, staff and families.',
+  description: 'Supervised agentic AI for whole-person senior care, operator coordination and family trust.',
   openGraph: {
     title: 'Aaranya Care Intelligence',
-    description: 'Every care signal gets context, an owner and a human-approved next step.',
+    description: 'Whole-person care intelligence with evidence-grounded agents and human authority.',
     images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Aaranya Care Intelligence' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Aaranya Care Intelligence',
-    description: 'Every care signal gets context, an owner and a human-approved next step.',
+    description: 'Whole-person care intelligence with evidence-grounded agents and human authority.',
     images: ['/og.png'],
   },
 };
